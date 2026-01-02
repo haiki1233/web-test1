@@ -24,7 +24,7 @@ function App(){
   // 2. hàm lấy danh sách ghi chú (READ)
   const fetchNotes = async () => {
     try {
-      const response = await fetch('http://localhost:3000/my-notes', {
+      const response = await fetch('https://my-notes-backend-28cf.onrender.com/my-notes', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}` // gửi kèm theo vé token
@@ -47,7 +47,7 @@ function App(){
     if (!newNoteContent) return; // không cho gửi giấy trắng
 
     try {
-      const response = await fetch('http://localhost:3000/notes', {
+      const response = await fetch('https://my-notes-backend-28cf.onrender.com/notes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ function App(){
     if (!window.confirm("Bạn có muốn xóa ghi chú này không?")) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/notes/${noteId}`, {
+      const response = await fetch(`https://my-notes-backend-28cf.onrender.com/notes/${noteId}`, {
         method: 'DELETE',
         headers: {
           'Authorization' : `Bearer ${token}` // Vẫn phải có vé mới được xóa
@@ -102,7 +102,7 @@ function App(){
 
     try {
       // 3. Gọi API (Dùng method PUT)
-      const response = await fetch(`http://localhost:3000/notes/${noteId}`, {
+      const response = await fetch(`https://my-notes-backend-28cf.onrender.com/notes/${noteId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ function App(){
     try {
       
       // 2. Gọi BACKEND (Fetch API)
-      const response = await fetch('http://localhost:3000/login', {
+      const response = await fetch('https://my-notes-backend-28cf.onrender.com/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json', // báo cho server biết mình gửi JSON

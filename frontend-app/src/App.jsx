@@ -9,6 +9,8 @@ import {
 } from '@ant-design/icons'; // nhập icon
 const { Title, Text } = Typography;
 
+import './App.css';
+
 
 function App(){
 
@@ -141,7 +143,7 @@ function App(){
         body: JSON.stringify({ content: editContent })
       });
 
-      if (res.oke) {
+      if (res.ok) {
         message.success("Cập nhật thành công!");
         setIsEditModalOpen(false);
         fetchNotes();
@@ -181,7 +183,7 @@ function App(){
               />
             </Form.Item>
             <Form.Item label="Mật Khẩu">
-              <Input.password
+              <Input.Password
                 prefix={<LockOutlined />}
                 placeholder="Nhập mật khẩu..."
                 value={password}
@@ -199,63 +201,63 @@ function App(){
 
   // B. Màn hình chính (Dashboard)
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', width: 600, margin: '0 auto'}}>
       <Card
-      title={<Title level={4}>📝 Sổ tay của tôi</Title>}
-      extra={<Button type='dashed' danger icon={<LogoutOutlined />} onClick={handleLogout}>Đăng xuất</Button>}
-      style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-    >
-      {/* khu vực thêm mới */}
-      <Space.Compact style={{ width: '100%', marginBottom: 20 }}>
-        <Input
-          size='large'
-          placeholder='Hôm nay bạn nghĩ gì?...'
-          value={newNoteContent}
-          onChange={e => setNewNoteContent(e.target.value)}
-          onPressEnter={handleCreateNote}
+        title={<Title level={4}>📝 Sổ tay của tôi</Title>}
+        extra={<Button type='dashed' danger icon={<LogoutOutlined />} onClick={handleLogout}>Đăng xuất</Button>}
+        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+      >
+        {/* khu vực thêm mới */}
+        <Space.Compact style={{ width: '100%', marginBottom: 20 }}>
+          <Input
+            size='large'
+            placeholder='Hôm nay bạn nghĩ gì?...'
+            value={newNoteContent}
+            onChange={e => setNewNoteContent(e.target.value)}
+            onPressEnter={handleCreateNote}
+          />
+          <Button type='primary' size='large' icon={<PlusOutlined />} onClick={handleCreateNote}>
+            Lưu
+          </Button>
+        </Space.Compact>
+
+        {/* Danh sách ghi chú */}
+        <List
+          dataSource={notes}
+          pagination={{ pageSize: 5,}} // tự động phân trang nếu quá dài
+          renderItem={(note) => (
+            <List.Item
+              actions={[
+                <Button type='text' icon={<EditOutlined />} style={{ color: 'orange'}} onClick={() => openEditModal(note)}>
+                  Sửa
+                </Button>,
+                <Button type='text' danger icon={<DeleteOutlined />} onClick={() => handleDeleteNote(note._id)}>
+                  Xóa
+                </Button>
+              ]}
+            >
+              <List.Item.Meta
+                title={<Text strong >{note.content}</Text>}
+                description={<Tag color="blue">{note.createdAt ? new Date(note.createdAt).toLocaleString() : "Vừa xong"}</Tag>}
+              />
+            </List.Item>
+          )}
         />
-        <Button type='primary' size='large' icon={<PlusOutlined />} onClick={handleCreateNote}>
-          Lưu
-        </Button>
-      </Space.Compact>
+      </Card>
 
-      {/* Danh sách ghi chú */}
-      <List
-        dataSource={notes}
-        pagination={{ pageSize: 5,}} // tự động phân trang nếu quá dài
-        renderItem={(note) => (
-          <List.Item
-            actions={[
-              <Button type='text' icon={<EditOutlined />} style={{ color: 'orange'}} onClick={() => openEditModal(note)}>
-                Sửa
-              </Button>,
-              <Button type='text' danger icon={<DeleteOutlined />} onClick={() => handleDeleteNote(note._id)}>
-                Xóa
-              </Button>
-            ]}
-          >
-            <List.Item.Meta
-              title={<Text strong >{note.content}</Text>}
-              description={<Tag color="blue">{note.createdAt ? new Date(note.createdAt).toLocaleString() : "Vừa xong"}</Tag>}
-            />
-          </List.Item>
-        )}
-      />
-    </Card>
-
-    {/* Modal sửa ghi chú (ẩn đi, chỉ hiện khi bấm sửa) */}
-    <Modal
-      title="Chỉnh sửa ghi chú"
-      open={isEditModalOpen}
-      onOk={handleUpdateNote}
-      onCancel={() => setIsEditModalOpen(false)}
-    >
-      <Input.TextArea 
-        rows={4}
-        value={editContent}
-        onChange={e => setEditContent(e.target.value)}
-      />
-    </Modal>
+      {/* Modal sửa ghi chú (ẩn đi, chỉ hiện khi bấm sửa) */}
+      <Modal
+        title="Chỉnh sửa ghi chú"
+        open={isEditModalOpen}
+        onOk={handleUpdateNote}
+        onCancel={() => setIsEditModalOpen(false)}
+      >
+        <Input.TextArea 
+          rows={4}
+          value={editContent}
+          onChange={e => setEditContent(e.target.value)}
+        />
+      </Modal>
     </div>
   );
 }

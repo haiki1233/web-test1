@@ -1,6 +1,14 @@
 import {useState, useEffect} from 'react';
-import './App.css';
-// import { replaceOne } from '../../backend-tutorial/models/User';
+import {
+  Button, Input, Form, Card, List, 
+  Typography, message, Modal, Space, Tag
+} from 'antd'; // nhập đồ nghề Ant design
+import {
+  DeleteOutlined, EditOutlined, LogoutOutlined, 
+  PlusOutlined, UserOutlined, LockOutlined
+} from '@ant-design/icons'; // nhập icon
+const { Title, Text } = Typography;
+
 
 function App(){
 
@@ -9,258 +17,245 @@ function App(){
   const [password, setPassword] = useState(''); // lưu password
   const [token, setToken] = useState(localStorage.getItem('accessToken')); //lưu token nếu có
 
-
   // State mới cho ghi chú
   const [notes, setNotes] = useState([]);
   const [newNoteContent, setNewNoteContent] = useState('');
 
-  // 1. useEffect: tự động chạy hàm này khi vừa vao web hoặc khi vừa đnagư nhập
-  useEffect(() => {
-    if(token){
-      fetchNotes();
-    }
-  }, [token]); // chạy lại mỗ khi biến token thay đổi
+  // State mới cho việc vauwf sửa ghi chú (Dùng modal thay vì prompt)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null); // ghi chú đang sửa
+  const [editContent, setEditContent] = useState('');
 
-  // 2. hàm lấy danh sách ghi chú (READ)
+  // Link backend (Thay vì link Render nếu muốn chạy online, hoặc localhost)
+  const API_URL = 'http://localhost:3000';
+  // const API_URL = 'https://my-notes-backend-28cf.onrender.com'; // link render
+
+  // ----- LOGIC HELPER ------
+  const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  });
+
+  useEffect(() => {
+    if (token) fetchNotes();
+  }, [token]);
+
+  // 1 lấy dánh sách (có loading)
   const fetchNotes = async () => {
     try {
-      const response = await fetch('https://my-notes-backend-28cf.onrender.com/my-notes', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}` // gửi kèm theo vé token
-        }
-      });
-
-      const data = await response.json();
-      if(data.data) {
-        setNotes(data.data); // lưu dữ liệu lấy được vào State để hiển thị
-      }
-    }catch (error){
-      console.error("lỗi lấy ghi chú:", error);
+      const res = await fetch(`${API_URL}/my-notes`, { headers: getHeaders() });
+      const data = await res.json();
+      if (data.data) setNotes(data.data);
+    }catch (error) {
+      message.error("lỗi kết nối server!");
     }
   };
 
-  // 3. Hàm tạo ghi chú mới (CREATE)
-  const handleCreateNote = async (e) => {
-    e.preventDefault(); // chặn load lại trang
-
-    if (!newNoteContent) return; // không cho gửi giấy trắng
-
+  // 2. Đăng nhập (Dùng message của Antd thay alert)
+  const handleLogin = async () => {
     try {
-      const response = await fetch('https://my-notes-backend-28cf.onrender.com/notes', {
+      const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // vẫn phải kẹp vé
+          'Content-Type' : 'application/json'
         },
-        body: JSON.stringify({content: newNoteContent })
+        body: JSON.stringify({ email, password })
       });
 
-      const result = await response.json();
-      if (result.note) {
-        alert("Đã lưu ghi chú!");
-        setNewNoteContent(''); // xóa ô nhập liệu cho sạch
-        fetchNotes(); // Gọi lại hàm lấy danh sách để cập nhật cái mới vừa thêm
+      const data = await res.json();
+      if (data.status === 'success') {
+        message.success("Đăng nhập thành công! Cgào mừng VIP.");
+        localStorage.setItem('accessToken', data.token);
+        setToken(data.token);
+      } else {
+        message.error(data.message);
       }
-    }catch (error){
-      alert("lỗi khi lưu ghi chú");
+    } catch (error) {
+      message.error("Không thể kết nối đến Server!");
     }
   }
 
-  // Hàm xóa ghi chú
-  const handleDeleteNote = async (noteId) => {
-    // hỏi lại cho chắc (User experience)
-    if (!window.confirm("Bạn có muốn xóa ghi chú này không?")) return;
+  // 3. Tạo ghi chú
+  const handleCreateNote = async () => {
+    if (!newNoteContent.trim()) return message.warning("Vui lòng nhập lại nội dung!");
 
     try {
-      const response = await fetch(`https://my-notes-backend-28cf.onrender.com/notes/${noteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization' : `Bearer ${token}` // Vẫn phải có vé mới được xóa
-        }
-      });
-
-      if (response.ok) {
-        alert("Đã xóa!");
-        fetchNotes(); // Gọi lại danh sách để cập nhật giao diện
-      } else {
-        alert("Có lỗi khi xóa!");
-      }
-    } catch (error) {
-      console.error("lỗi xóa", error);
-    }
-  };
-
-  // Hàm sửa ghi chú
-  const handleEditNote = async (noteId, currentContent) => {
-    // 1. Hiện hộp thoại cho người dùng nhập nội dung mới
-    // nó sẽ hiện nội dung cũ để sữa cho dễ
-    const newContent = window.prompt("Sửa ghi chú của bạn:", currentContent);
-
-    // 2. Nếu người dùng bấm "Hủy" hoặc xóa trắng thì thôi không cần sửa
-    if (newContent === null || newContent.trim() === "") return;
-
-    try {
-      // 3. Gọi API (Dùng method PUT)
-      const response = await fetch(`https://my-notes-backend-28cf.onrender.com/notes/${noteId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ content: newContent }) // gửi nội dung mới lên
-      });
-
-      if (response.ok) {
-        alert("Đã sửa thành công!");
-        fetchNotes(); // tải lại danh sách để thấy thay đổi
-      } else {
-        alert("Có lỗi khi sửa!");
-      }
-    } catch (error) {
-      console.error("Lỗi sửa", error);
-    }
-  };
-
-  // hàm xử lý khi bấm nút đăng nhập
-  const handleLogin = async (e) =>{
-    e.preventDefault();  // chặn lại việc load lại trang web (mặc định của form)
-
-    try {
-      
-      // 2. Gọi BACKEND (Fetch API)
-      const response = await fetch('https://my-notes-backend-28cf.onrender.com/login', {
+      const res = await fetch(`${API_URL}/notes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json', // báo cho server biết mình gửi JSON
-        },
-        body: JSON.stringify({
-          // đóng gói dữ liệu
-          email: email,
-          password: password
-        })
+        headers: getHeaders(),
+        body: JSON.stringify({ content: newNoteContent })
       });
 
-      const data = await response.json(); // giải nén kết quả trả về
-
-      // 3. Xử lý kết quả 
-      if (data.status === 'success'){
-        alert("Đăng nhập thành công!");
-
-        // Quan trọng: lưu Token vào túi (localStorage) để f5 không bị mất
-        localStorage.setItem('accessToken', data.token);
-
-        // cập nhật state để giao diện đổi ngay lập tức
-        setToken(data.token);
-      }else{
-        alert(data.message); // hiện lỗi nếu sai pass
+      const result = await res.json();
+      if (result.note) {
+        message.success("Đã thêm ghi chú mới!");
+        setNewNoteContent('');
+        fetchNotes();
       }
-    }catch (error){
-      alert("lỗi kết nối server! Bạn đã bật backend chưa?");
+    } catch (error) {
+      message.error("Lỗi khi tạo ghi chú!");
     }
   };
 
-  // Hàm đăng xuất
-  const handleLogout= ()=>{
-    localStorage.removeItem('accessToken'); // Xóa token trong túi
-    setToken(null); // xóa token trong state
+
+  // 4. Xóa ghi chú (Dùng Modal.confirm thay vì window.confirm)
+  const handleDeleteNote = async (noteId) => {
+    Modal.confirm({
+      title: 'Bạn có chắc chắn không?',
+      content: 'Ghi chú này sẽ bị xóa vĩnh viễn.',
+      okText: 'Xóa luôn',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          const res = await fetch(`${API_URL}/notes/${noteId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          });
+
+          if(res.ok) {
+            message.success("Đã xóa ghi chú!");
+            fetchNotes();
+          }
+        } catch (error) {
+          message.error("Lỗi khi xóa!");
+        }
+      }
+    });
+  };
+
+  // 5. Chuẩn bị sửa (Mở Modal)
+  const openEditModal = (note) => {
+    setEditingNote(note);
+    setEditContent(note.content);
+    setIsEditModalOpen(true);
+  }
+
+
+  // 6. Thực hiện sửa (Khi bấm oke trong Modal)
+  const handleUpdateNote = async () => {
+    try {
+      const res = await fetch(`${API_URL}/notes/${editingNote._id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ content: editContent })
+      });
+
+      if (res.oke) {
+        message.success("Cập nhật thành công!");
+        setIsEditModalOpen(false);
+        fetchNotes();
+      }
+    } catch (error) {
+      message.error("Lỗi khi sửa!");
+    }
+  };
+
+
+  // Hàm logout
+  const handleLogout= () => {
+    localStorage.removeItem('accessToken');
+    setToken(null);
+    setNotes([]);
+    message.info("Đã đăng xuất.");
   }
 
   // 4. Giao diện (Render)
-  return (
-    <div style={{ padding: "20px 50px", fontFamily: 'Arial' }}>
-      <h1>📝 Sổ tay Fullstack</h1>
-      {/* viết form ở đây */}
-      {/* Điều kiện: Nếu có token rồi thì hiện lời chào, chưa có thì hiện ra form */}
-      {token ? (
-        <div style={{ textAlign: 'left' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3>Xin chào, VIP Member!</h3>
-            <button onClick={handleLogout} style={{ background: 'red', color: 'white' }}>Đăng xuất</button> 
+  
+  // A. Màn hình đăng nhập
+  if (!token) {
+    return (
+      <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5'}}>
+        <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <Title level={3}>🔐 Đăng Nhập</Title>
+            <Text type='secondary'>Sổ tay</Text>
           </div>
-
-          {/* form thêm ghi chú */}
-          <div style={{ background: '#f0f0f0', padding: 15, borderRadius: 8,marginTop: 20 }}>
-            <h4>Thêm ghi chú mới: </h4>
-            <form onSubmit={handleCreateNote} style={{ display: 'flex', gap: 10 }}>
-              <input 
-                type="text"
-                value={newNoteContent}
-                onChange={(e) => setNewNoteContent(e.target.value)}
-                placeholder='Hôm nay bạn nghĩ gì?...'
-                style={{ flex: 1, padding: 10 }}
+          <Form layout='vertical' onFinish={handleLogin}>
+            <Form.Item label="Email">
+              <Input
+                prefix={<UserOutlined />}
+                placeholder='Nhập email...'
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
-              <button type='submit' style={{ background: 'green', color: 'white'}}>Lưu ngay</button>
-            </form>
-          </div>
+            </Form.Item>
+            <Form.Item label="Mật Khẩu">
+              <Input.password
+                prefix={<LockOutlined />}
+                placeholder="Nhập mật khẩu..."
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </Form.Item>
+            <Button type='primary' htmlType='submit' block size='large'>
+              Đăng nhập ngay
+            </Button>
+          </Form>
+        </Card>
+      </div>
+    );
+  }
 
-          {/* Danh sách ghi chú */}
-          <div style={{ marginTop: 30 }}>
-            <h4>Danh sách ghi chú của tôi:</h4>
-            {notes.length === 0 ? <p>Chưa có ghi chú nào...</p> : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {notes.map((note) =>(
-                  <li key={note._id} style={{
-                    borderBottom: '1px solid #ccc',
-                    padding: '10px 0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div style={{ flex: 1}}>
-                      {/* nội dung cột bên trái */}
-                      <span style={{ fontWeight: 'bold' }}>{note.content}</span> <br/>
-                      <small style={{ color: 'gray' }}>
-                        {note.createdAt ? new Date(note.createdAt).toLocaleString() : "vừa xong"}
-                      </small>
-                    </div>
-                    
-                    {/* nút bấm bên phải */}
-                    <div>
-                      {/* nút sửa */}
-                      <button
-                        onClick={() => handleEditNote(note._id, note.content)}
-                        style={{ background: 'orange', color: 'white', marginRight: 5, cursor: 'pointer'}}
-                      >
-                        Sửa
-                      </button>
+  // B. Màn hình chính (Dashboard)
+  return (
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <Card
+      title={<Title level={4}>📝 Sổ tay của tôi</Title>}
+      extra={<Button type='dashed' danger icon={<LogoutOutlined />} onClick={handleLogout}>Đăng xuất</Button>}
+      style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+    >
+      {/* khu vực thêm mới */}
+      <Space.Compact style={{ width: '100%', marginBottom: 20 }}>
+        <Input
+          size='large'
+          placeholder='Hôm nay bạn nghĩ gì?...'
+          value={newNoteContent}
+          onChange={e => setNewNoteContent(e.target.value)}
+          onPressEnter={handleCreateNote}
+        />
+        <Button type='primary' size='large' icon={<PlusOutlined />} onClick={handleCreateNote}>
+          Lưu
+        </Button>
+      </Space.Compact>
 
-                      {/* nút xóa */}
-                      <button
-                        onClick={() => handleDeleteNote(note._id)}
-                        style={{ background: 'red', color: 'white', marginLeft: 10, cursor: 'pointer'}}
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={handleLogin}>
-          <div>
-            <label>Email: </label>
-            <input 
-              type="text" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} // Cập nhật state khi gõ phím
-              placeholder='Nhập email...'
+      {/* Danh sách ghi chú */}
+      <List
+        dataSource={notes}
+        pagination={{ pageSize: 5,}} // tự động phân trang nếu quá dài
+        renderItem={(note) => (
+          <List.Item
+            actions={[
+              <Button type='text' icon={<EditOutlined />} style={{ color: 'orange'}} onClick={() => openEditModal(note)}>
+                Sửa
+              </Button>,
+              <Button type='text' danger icon={<DeleteOutlined />} onClick={() => handleDeleteNote(note._id)}>
+                Xóa
+              </Button>
+            ]}
+          >
+            <List.Item.Meta
+              title={<Text strong >{note.content}</Text>}
+              description={<Tag color="blue">{note.createdAt ? new Date(note.createdAt).toLocaleString() : "Vừa xong"}</Tag>}
             />
-          </div>
-          <div style={{ marginTop: 10}}>
-            <label>Password: </label>
-            <input 
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)} 
-            />
-          </div>
-          <button type='submit' style={{marginTop: 20}}>Đăng nhập ngay</button>
-        </form>
-      )}
+          </List.Item>
+        )}
+      />
+    </Card>
+
+    {/* Modal sửa ghi chú (ẩn đi, chỉ hiện khi bấm sửa) */}
+    <Modal
+      title="Chỉnh sửa ghi chú"
+      open={isEditModalOpen}
+      onOk={handleUpdateNote}
+      onCancel={() => setIsEditModalOpen(false)}
+    >
+      <Input.TextArea 
+        rows={4}
+        value={editContent}
+        onChange={e => setEditContent(e.target.value)}
+      />
+    </Modal>
     </div>
   );
 }

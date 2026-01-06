@@ -100,7 +100,6 @@ function App(){
   };
 
 
-  // 4. Xóa ghi chú (Dùng Modal.confirm thay vì window.confirm)
   const handleDeleteNote = async (noteId) => {
     Modal.confirm({
       title: 'Bạn có chắc chắn không?',

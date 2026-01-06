@@ -224,7 +224,7 @@ function App(){
         {/* Danh sách ghi chú */}
         <List
           dataSource={notes}
-          pagination={{ pageSize: 5,}} // tự động phân trang nếu quá dài
+          pagination={{ pageSize: 5,}}
           renderItem={(note) => (
             <List.Item
               actions={[

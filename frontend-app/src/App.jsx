@@ -1,11 +1,11 @@
 import {useState, useEffect} from 'react';
 import {
   Button, Input, Form, Card, List, 
-  Typography, message, Modal, Space, Tag
+  Typography, message, Modal, Space, Tag, Upload, Image
 } from 'antd'; // nhập đồ nghề Ant design
 import {
   DeleteOutlined, EditOutlined, LogoutOutlined, 
-  PlusOutlined, UserOutlined, LockOutlined
+  PlusOutlined, UserOutlined, LockOutlined, UploadOutlined
 } from '@ant-design/icons'; // nhập icon
 const { Title, Text } = Typography;
 
@@ -27,6 +27,9 @@ function App(){
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null); // ghi chú đang sửa
   const [editContent, setEditContent] = useState('');
+
+  // state lưu file ảnh đang chọn (nhưng chưa upload)
+  const [fileList, setFileList] = useState([]);
 
   // Link backend (Thay vì link Render nếu muốn chạy online, hoặc localhost)
   const API_URL = 'http://localhost:3000';
@@ -81,17 +84,31 @@ function App(){
   const handleCreateNote = async () => {
     if (!newNoteContent.trim()) return message.warning("Vui lòng nhập lại nội dung!");
 
+    // A. đóng gói dữ liệu vào formData (cái hộp container)
+    const formData = new FormData();
+    formData.append('content', newNoteContent);
+
+    // Nếu có chọn ảnh thì bỏ vào hộp luôn
+    if (fileList.length > 0) {
+      formData.append('image', fileList[0].originFileObj);
+    }
+
     try {
+
+      // B. Gửi đi (lưu ý: không set content-Type Json nữa, để trình duyệt tự lo)
       const res = await fetch(`${API_URL}/notes`, {
         method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ content: newNoteContent })
+        headers: {
+          'Authorization' : `Bearer ${token}`
+        },
+        body: formData
       });
 
       const result = await res.json();
       if (result.note) {
         message.success("Đã thêm ghi chú mới!");
         setNewNoteContent('');
+        setFileList([]);
         fetchNotes();
       }
     } catch (error) {
@@ -207,18 +224,41 @@ function App(){
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
       >
         {/* khu vực thêm mới */}
-        <Space.Compact style={{ width: '100%', marginBottom: 20 }}>
-          <Input
-            size='large'
-            placeholder='Hôm nay bạn nghĩ gì?...'
-            value={newNoteContent}
-            onChange={e => setNewNoteContent(e.target.value)}
-            onPressEnter={handleCreateNote}
-          />
-          <Button type='primary' size='large' icon={<PlusOutlined />} onClick={handleCreateNote}>
-            Lưu
-          </Button>
-        </Space.Compact>
+        <div style={{ marginBottom: 20 }}>
+          <Space.Compact style={{ width: '100%', marginBottom: 20 }}>
+            <Input
+              size='large'
+              placeholder='Hôm nay bạn nghĩ gì?...'
+              value={newNoteContent}
+              onChange={e => setNewNoteContent(e.target.value)}
+              onPressEnter={handleCreateNote}
+            />
+            {/* nút upload ảnh */}
+            <Upload
+              fileList={fileList}
+              beforeUpload={() => false} // chặn không cho upload ngay (đợi bấm nút)
+              onChange={ ({fileList}) => setFileList(fileList)}
+              maxCount={1} // chỉ cho chọn 1 ảnh thôi
+              showUploadList={false} // ảnh danh sách rờm rà đi, ta hiển thị số lượng thôi
+            >
+              <Button size='lagre' icon={<UploadOutlined />} style={{ height: 40}}>
+                {fileList.length > 0 ? "đã chọn ảnh" : "ảnh"}
+              </Button>
+            </Upload>
+
+            <Button type='primary' size='large' icon={<PlusOutlined />} onClick={handleCreateNote}>
+              Lưu
+            </Button>
+          </Space.Compact>
+
+          {/* Hiển thị tên file đang chọn (nếu có) để user biết */}
+          {fileList.length > 0 && (
+            <div style={{ marginTop: 5, color: 'blue' }}>
+              Đang chọn: {fileList[0].name} (Bấm lưu để tải lên)
+            </div>
+          )}
+        </div>
+        
 
         {/* Danh sách ghi chú */}
         <List
@@ -236,6 +276,12 @@ function App(){
               ]}
             >
               <List.Item.Meta
+                // Avatar bây giờ sẽ là cái ảnh (nếu có)
+                avatar={
+                  note.imageUrl ? (
+                    <Image width={100} src={note.imageUrl} style={{ borderRadius: 5 }} />
+                  ) : null
+                }
                 title={<Text strong >{note.content}</Text>}
                 description={<Tag color="blue">{note.createdAt ? new Date(note.createdAt).toLocaleString() : "Vừa xong"}</Tag>}
               />

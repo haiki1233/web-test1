@@ -15,7 +15,17 @@ exports.getMyNotes = async (req, res) => {
 exports.createNote = async (req, res) => {
     try {
         const { content } = req.body;
-        const newNote = new Note({ content, userId: req.user.userId });
+
+        // kiểm tra xem có file ảnh gửi kèm ko
+        // Nếu có thì lấy đường link path, nếu không thì để rỗng
+        const imageUrl = req.file ? req.file.path : null;
+        
+        const newNote = new Note({ 
+            content, 
+            userId: req.user.userId,
+            imageUrl: imageUrl
+        });
+        
         await newNote.save();
         res.json({ message: "Đã lưu!", note: newNote });
     }catch (error) {

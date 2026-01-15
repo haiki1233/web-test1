@@ -32,8 +32,8 @@ function App(){
   const [fileList, setFileList] = useState([]);
 
   // Link backend (Thay vì link Render nếu muốn chạy online, hoặc localhost)
-  const API_URL = 'http://localhost:3000';
-  // const API_URL = 'https://my-notes-backend-28cf.onrender.com'; // link render
+  //const API_URL = 'http://localhost:3000';
+  const API_URL = 'https://my-notes-backend-28cf.onrender.com'; // link render
 
   // ----- LOGIC HELPER ------
   const getHeaders = () => ({

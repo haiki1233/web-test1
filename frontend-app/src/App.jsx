@@ -10,7 +10,7 @@ import {
 const { Title, Text } = Typography;
 
 import './App.css';
-import Chat from './component/chat.jsx';
+import Chat from './component/Chat.jsx';
 
 
 function App(){

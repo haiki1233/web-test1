@@ -35,7 +35,9 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: '1h' });
 
-        res.json({ message: "Đăng nhập thành công!", token, username: user.username, status: "success" });
+        const displayName = user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : user.username;
+
+        res.json({ message: "Đăng nhập thành công!", token, username: displayName, status: "success" });
     }catch (error) {
         res.status(500).json({ error: error.message });
     }

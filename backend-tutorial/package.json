@@ -20,6 +20,7 @@
     "mongoose": "^9.1.1",
     "mongose": "^0.0.2-security",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0"
+    "multer-storage-cloudinary": "^4.0.0",
+    "socket.io": "^4.8.3"
   }
 }

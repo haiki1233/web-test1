@@ -26,7 +26,7 @@ function App(){
 
   // State mới cho việc vauwf sửa ghi chú (Dùng modal thay vì prompt)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingNote, setEditingNote] = useState(null); // ghi chú đang sửa
+  const [editingNote, setEditingNote] = useState(null);
   const [editContent, setEditContent] = useState('');
 
   // state lưu file ảnh đang chọn (nhưng chưa upload)

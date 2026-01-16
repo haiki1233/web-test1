@@ -10,6 +10,7 @@ import {
 const { Title, Text } = Typography;
 
 import './App.css';
+import Chat from './component/chat.jsx';
 
 
 function App(){
@@ -18,7 +19,7 @@ function App(){
   const [email, setEmail] = useState(''); // lưu email người dùng nhập
   const [password, setPassword] = useState(''); // lưu password
   const [token, setToken] = useState(localStorage.getItem('accessToken')); //lưu token nếu có
-
+  const [username, setUsername] = useState(localStorage.getItem('username') || '');
   // State mới cho ghi chú
   const [notes, setNotes] = useState([]);
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -32,8 +33,11 @@ function App(){
   const [fileList, setFileList] = useState([]);
 
   // Link backend (Thay vì link Render nếu muốn chạy online, hoặc localhost)
-  //const API_URL = 'http://localhost:3000';
-  const API_URL = 'https://my-notes-backend-28cf.onrender.com'; // link render
+  // const API_URL = 'http://localhost:3000';
+  // const API_URL = 'https://my-notes-backend-28cf.onrender.com'; // link render
+
+  // import.meta.env.VITE_API_URL sẽ tự lấy giá trị từ file .env hoặc từ Vercel
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // ----- LOGIC HELPER ------
   const getHeaders = () => ({
@@ -72,6 +76,8 @@ function App(){
         message.success("Đăng nhập thành công! Cgào mừng VIP.");
         localStorage.setItem('accessToken', data.token);
         setToken(data.token);
+        localStorage.setItem('username', data.username); // Cất tên vào túi
+        setUsername(data.username);
       } else {
         message.error(data.message);
       }
@@ -173,8 +179,10 @@ function App(){
   // Hàm logout
   const handleLogout= () => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('username');
     setToken(null);
     setNotes([]);
+    setUsername('');
     message.info("Đã đăng xuất.");
   }
 
@@ -288,6 +296,7 @@ function App(){
             </List.Item>
           )}
         />
+        <Chat username={username || "User"} />
       </Card>
 
       {/* Modal sửa ghi chú (ẩn đi, chỉ hiện khi bấm sửa) */}

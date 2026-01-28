@@ -31,7 +31,8 @@ io.on("connection", (socket) => {
     console.log(`👤 ${username} connected (${socket.id})`);
 
     socket.on("send_message", (data) => {
-        io.emit("received_message", data);
+        console.log("📨 Server nhận:", data);
+        io.emit("receive_message", data);
     });
 
     socket.on("disconnect", () => {
